@@ -1,4 +1,5 @@
-Attribute VB_Name = "mod_Insert_mkt_cap"
+Attribute VB_Name = "mod_insert_price"
+
 Dim strSQL As String
 Dim ma As String
 Dim code_id As String
@@ -7,13 +8,14 @@ Dim cname As String
 
 'today data
 Dim rg_Code As Range
-Dim rg_mkt_cap As Range
+Dim rg_price As Range
 Dim rg_da As Range
 
 'history data
 Dim rg_Code_hist As Range
-Dim rg_mkt_cap_hist As Range
+Dim rg_price_hist As Range
 Dim rg_da_hist As Range
+
 
 Dim DBObject As cls_DBobject
 Dim log_Object As cls_message_log
@@ -21,38 +23,32 @@ Dim log_Object As cls_message_log
 Dim i As Long
 Dim j As Long
 
-Sub Insert_Today_Mkt_Cap()
+Sub Insert_Today_Price()
 On Error GoTo EH
     ma = "tw"
     
     Set DBObject = New cls_DBobject
     Set log_Object = New cls_message_log
     
-    'setup paramter
     Call market_parameter_setup(ma)
-    
-    'open db connection
     Call DBObject.Open_Conn(ma)
-    
-    'start check unlimit loop timer
     Call log_Object.set_start_time
+    Call insert_Today_main_flow
     
-    'insert today data main flow
-    Call insert_today_data_main_flow
-    
-    'close DB connection
     Call DBObject.Close_Conn
 
     Call MsgBox("done !")
     Exit Sub
 EH:
-    Call log_Object.err_message_log("Insert_Today_Mkt_Cap:" & Err.Description)
+    Call log_Object.err_message_log("insert_Today_price" & ":" & Err.Description)
 End Sub
 
-Private Function insert_today_data_main_flow() As String
+
+
+Private Function insert_Today_main_flow() As String
     Dim iRet As Integer
     Dim da As String
-    Dim mkt_cap As String
+    Dim price As String
 On Error GoTo EH
     i = 0
     
@@ -64,9 +60,8 @@ On Error GoTo EH
         If InStr(1, code_id, sub_security_code) < 0 Then GoTo NEXT_Code
         Call check_main_code
         
-        mkt_cap = rg_mkt_cap.Offset(0, i).Value
-        Call update_mkt_cap_into_DB(da, mkt_cap)
-        
+        price = rg_price.Offset(0, i).Value
+        Call Insert_price_into_DB(da, price)
 NEXT_Code:
         i = i + 1
         If log_Object.check_infinity_loop = 1 Then
@@ -80,101 +75,77 @@ NEXT_Code:
     Wend
     
 END_func:
-    insert_today_data_main_flow = 0
+    insert_Today_main_flow = 0
     Exit Function
 EH:
-    Call log_Object.err_message_log("insert_today_data_main_flow" & ":" & Err.Description)
-    insert_today_data_main_flow = 1
+    Call log_Object.err_message_log("insert_Today_main_flow" & ":" & Err.Description)
+    insert_Today_main_flow = 1
 End Function
 
-
-Sub Insert_Hist_Mkt_Cap()
+Sub insert_historial_price()
 On Error GoTo EH
     ma = "tw"
     
     Set DBObject = New cls_DBobject
     Set log_Object = New cls_message_log
     
-    'setup paramter
     Call market_parameter_setup(ma)
-    
-    'open db connection
     Call DBObject.Open_Conn(ma)
-    
-    'start check unlimit loop timer
     Call log_Object.set_start_time
+    Call insert_Hist_main_flow
     
-    'insert today data main flow
-    Call insert_Hist_data_main_flow
-    
-    'close DB connection
     Call DBObject.Close_Conn
 
     Call MsgBox("done !")
     Exit Sub
 EH:
-    Call log_Object.err_message_log("Insert_Hist_Mkt_Cap:" & Err.Description)
+    Call log_Object.err_message_log("insert_historial_price" & ":" & Err.Description)
 End Sub
 
-
-Private Function insert_Hist_data_main_flow() As String
+Private Function insert_Hist_main_flow() As String
     Dim iRet As Integer
 On Error GoTo EH
-    Dim da As String
     i = 0
     
     ' X 軸
-    While Trim(rg_Code_hist.Offset(0, i).Value) <> ""
-        code_id = rg_Code_hist.Offset(0, i).Value
-        'check stock in correct market
+    While Trim(rg_Code.Offset(0, i).Value) <> ""
+        code_id = rg_Code.Offset(0, i).Value
         If InStr(1, code_id, sub_security_code) < 0 Then GoTo NEXT_Code
         Call check_main_code
-        Call DayBYDay_mkt_cap
-        
+        Call DayBYDay_price
 NEXT_Code:
         i = i + 1
         If log_Object.check_infinity_loop = 1 Then
             iRet = MsgBox("執行時間過長，是否繼續 ?", vbYesNo, "Warning")
-            If iRet = vbNo Then
-                GoTo END_func
-            Else
-                'reset check unlimit loop timer
-                Call log_Object.set_start_time
-            End If
+            If iRet = vbYes Then GoTo END_func
         End If
     Wend
     
 END_func:
-    insert_Hist_data_main_flow = 0
+    insert_Hist_main_flow = 0
     Exit Function
 EH:
-    Call log_Object.err_message_log("insert_Hist_data_main_flow" & ":" & Err.Description)
-    insert_Hist_data_main_flow = 1
+    Call log_Object.err_message_log("insert_Hist_main_flow" & ":" & Err.Description)
+    insert_Hist_main_flow = 1
 End Function
 
-
-Private Function DayBYDay_mkt_cap() As String
-    Dim iRet As Integer
-    'Dim j As Long
+Private Function DayBYDay_price() As String
+    
+    Dim j As Long
     Dim da As String
-    Dim mkt_cap As String
+    Dim pr As String
 On Error GoTo EH
     j = 0
         
     ' Y 軸
-    While Trim(rg_mkt_cap_hist.Offset(j, i).Value) <> ""
+    While Trim(rg_price_hist.Offset(j, i).Value) <> ""
         da = rg_da_hist.Offset(j, 0).Value
-        mkt_cap = rg_mkt_cap_hist.Offset(j, i).Value
-        Call update_mkt_cap_into_DB(da, mkt_cap)
+        pr = rg_price_hist.Offset(j, i).Value
+        Call Insert_price_into_DB(da, pr)
         j = j + 1
         If log_Object.check_infinity_loop = 1 Then
             iRet = MsgBox("執行時間過長，是否繼續 ?", vbYesNo, "Warning")
-            If iRet = vbNo Then
-                GoTo END_func
-            Else
-                'reset check unlimit loop timer
-                Call log_Object.set_start_time
-            End If
+            If iRet = vbYes Then GoTo END_func
         End If
     Wend
 END_func:
@@ -185,10 +156,10 @@ EH:
 End Function
 
 
-Public Function update_mkt_cap_into_DB(ByVal da As String, ByVal cap As String) As String
+Public Function Insert_price_into_DB(ByVal da As String, ByVal pr As String) As String
 On Error GoTo EH
         
-    strSQL = "update daily.price set market_cap = " + cap + " where da='" + da + "' and code='" + code_id + "';"
+    strSQL = "Insert into daily.price(da, code, cl) values ('" + da + "', '" + code_id + "', " + Str(pr) + ");"
     result = DBObject.exec_sql(strSQL)
     
     Exit Function
@@ -196,7 +167,8 @@ EH:
     Call log_Object.err_message_log("Insert_price_into_DB" & ":" & Err.Description)
 End Function
 
-'check maincode table, if not EXIST then insert into code
+
+'檢查maincode 中是否已有，沒有的話要新增代碼
 Function check_main_code() As String
 On Error GoTo EH
     Dim result As ADODB.Recordset
@@ -232,13 +204,13 @@ On Error GoTo EH
         Call log_Object.err_message_log("Error Market !")
     End If
     
-    Set rg_Code = mkt_cap.Range("B3")
-    Set rg_mkt_cap = mkt_cap.Range("B4")
-    Set rg_da = mkt_cap.Range("B2")
+    Set rg_Code = sh_price.Range("B3")
+    Set rg_price = sh_price.Range("B4")
+    Set rg_da = sh_price.Range("B2")
     
-    Set rg_Code_hist = mkt_cap.Range("B10")
-    Set rg_mkt_cap_hist = mkt_cap.Range("B11")
-    Set rg_da_hist = mkt_cap.Range("A11")
+    Set rg_Code_hist = sh_price.Range("B10")
+    Set rg_price_hist = sh_price.Range("B11")
+    Set rg_da_hist = sh_price.Range("A11")
     
     Exit Sub
 EH:

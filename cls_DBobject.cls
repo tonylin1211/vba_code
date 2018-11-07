@@ -27,8 +27,7 @@ On Error GoTo EH
     exec_sql = 0
     Exit Function
 EH:
-    Call log_Object.err_message_log("Open_Conn" & ":" & Err.Description)
-    'Call MsgBox("資料庫維護中，請稍候再試或聯絡負責人員")
+    Call log_Object.err_message_log("exec_sql" & ":" & Err.Description)
     exec_sql = 1
 End Function
 
@@ -38,6 +37,7 @@ On Error GoTo EH
     Set select_sql = Recordset
     Exit Function
 EH:
+    Call log_Object.err_message_log("select_sql" & ":" & Err.Description)
     'Call MsgBox("資料庫維護中，請稍候再試或聯絡負責人員")
 End Function
 

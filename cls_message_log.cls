@@ -45,5 +45,3 @@ Public Function check_infinity_loop() As String
         check_infinity_loop = 0
     End If
 End Function
-
-
